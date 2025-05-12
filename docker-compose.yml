@@ -1,0 +1,46 @@
+version: '3'
+services:
+  saifDatabase:
+    container_name: saifDatabase
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: saifur
+      POSTGRES_PASSWORD: saifur123
+      POSTGRES_DB: saifTable
+
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyD1HUzeHWo0hXLXknwRgZ_h8bwRIU-_OyU
+      - NEXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lcb-aYpAAAAADJLVict1FyCiey132R8qdWLon2w
+      - RECAPTCHA_SECRET_KEY=6Lcb-aYpAAAAAL7hCRtE4OVhqDA6Qs15Lo8HUHx-
+  backend:
+    container_name: backend
+    image: backend
+    build: 
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "8585:8585"
+    
+    depends_on:
+      - saifDatabase
+    environment:
+      - PORT=8585
+      - DATABASE_URL=postgresql://saifur:saifur123@db:5432/saifTable
+      - JWT_SECRET=viugh@#%48rsdsdbov087qh798yh
+      - MAIL_EMAIL=sr018695@gmail.com
+      - MAIL_PASSWORD="markarY iS a kinD of chemestrY"
+      - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyD1HUzeHWo0hXLXknwRgZ_h8bwRIU-_OyU
+volumes:
+  db_data: {}

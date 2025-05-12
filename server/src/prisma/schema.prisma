@@ -1,0 +1,349 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminLog {
+  id          String   @id @default(uuid())
+  type        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ConstractorLogs {
+  id          String   @id @default(uuid())
+  type        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id               String          @id @default(uuid())
+  username         String          @unique
+  email            String          @unique
+  hashedPassword   String
+  profileName      String? // full name for contractor manager, and employee
+  profileImage     String? // image for contractor manager, and employee
+  accessLevel      String
+  dateOfBirth      DateTime?
+  dateofHire       DateTime?
+  jobTitle         String?
+  paymentRate      Decimal?
+  assignedRoute    Route?          @relation(fields: [routeId], references: [id])
+  routeId          String?
+  collectionPlan   CollectionPlan? @relation(fields: [collectionPlanId], references: [id])
+  collectionPlanId String?
+
+  role     Role    @relation(fields: [roleName], references: [name], onDelete: Cascade) // onDelete: Cascade it's meant to delete the user if the role is deleted. for example, if the role is deleted, all users with that role will be deleted as well.
+  roleName String  @default("UNASSIGNED")
+  sts      STS?    @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId    String?
+
+  landfill   Landfill? @relation(fields: [landfillId], references: [id], onDelete: Cascade)
+  landfillId String?
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  Contractor   Contractor? @relation(fields: [contractorId], references: [id])
+  contractorId String?
+
+  @@index([username], name: "username_index")
+  @@index([email], name: "email_index")
+}
+
+model Contractor {
+  id                  String    @id @default(uuid())
+  name                String    @unique
+  registrationId      String
+  registrationDate    DateTime?
+  tinNumber           String?
+  contactNumber       String?
+  workforceSize       Decimal?
+  paymentPerTon       Decimal?  @db.Decimal(10, 2)
+  requiredWastePerDay Decimal   @db.Decimal(10, 2)
+  contractDuration    String?
+  area                String?
+
+  assignedSTS STS?    @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId       String?
+
+  manager User[]
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  STSContractorEntry STSContractorEntry[]
+  ContractorBill     ContractorBill[]
+}
+
+model ContractorBill {
+  id            String     @id @default(uuid())
+  contractor    Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  contractorId  String
+  sts           STS        @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId         String
+  billNo        Int        @unique @default(autoincrement())
+  paymentPerTon Decimal?   @db.Decimal(10, 2)
+  deficit       Decimal?   @db.Decimal(10, 2)
+
+  weightRequired  Decimal? @db.Decimal(10, 2)
+  weightCollected Decimal? @db.Decimal(10, 2)
+  paymentAmount   Decimal? @db.Decimal(10, 2)
+  fine            Decimal? @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model STSContractorEntry {
+  id           String     @id @default(uuid())
+  sts          STS        @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId        String
+  contractor   Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  contractorId String
+
+  wasteType String?
+
+  wasteWeight Decimal?  @db.Decimal(10, 2)
+  entryTime   DateTime? @default(now())
+  exitTime    DateTime?
+
+  vehicleNumber String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Landfill {
+  id                  String   @id @default(uuid())
+  name                String?
+  capacity            Decimal? @db.Decimal(10, 2)
+  currentTotalWaste   Decimal? @db.Decimal(10, 2)
+  operationalTimeSpan Decimal? @db.Decimal(10, 2)
+  latitude            Decimal
+  longitude           Decimal
+
+  LandfillVehicleEntry LandfillVehicleEntry[]
+  manager              User[]
+  Trip                 Trip[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Bill      Bill[]
+  Vehicle   Vehicle[]
+}
+
+model LandfillVehicleEntry {
+  id         String   @id @default(uuid())
+  landfill   Landfill @relation(fields: [landfillId], references: [id], onDelete: Cascade)
+  landfillId String
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId  String
+
+  weightOfWaste Decimal?  @db.Decimal(10, 2)
+  entryTime     DateTime
+  exitTime      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Vehicle {
+  id                    String   @id @default(uuid())
+  vehicleNumber         String   @unique
+  vehicleType           String
+  capacity              Decimal  @db.Decimal(10, 2)
+  lodadedFuelCostPerKm  Decimal  @db.Decimal(10, 2)
+  unloadedFuelCostPerKm Decimal  @db.Decimal(10, 2)
+  currentLatitude       Decimal?
+  currentLongitude      Decimal?
+
+  landfill   Landfill @relation(fields: [landfillId], references: [id], onDelete: Cascade)
+  landfillId String
+  sts        STS      @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId      String
+
+  duration Decimal? @db.Decimal(10, 2)
+  distance Decimal? @db.Decimal(10, 2)
+
+  STSVehicleEntry      STSVehicleEntry[]
+  LandfillVehicleEntry LandfillVehicleEntry[]
+  Bill                 Bill[]
+  Trip                 Trip[]
+  Schedule             Schedule[]
+}
+
+model Bill {
+  id        String  @id @default(uuid())
+  billNo    Int     @unique @default(autoincrement())
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId String
+  sts       STS     @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId     String
+
+  landfill   Landfill @relation(fields: [landfillId], references: [id], onDelete: Cascade)
+  landfillId String
+
+  trip   Trip?   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tripId String?
+
+  weightOfWaste     Decimal? @db.Decimal(10, 2)
+  allocatedFuelCost Decimal? @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model STSVehicleEntry {
+  id            String    @id @default(uuid())
+  sts           STS       @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId         String
+  vehicle       Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId     String
+  weightOfWaste Decimal?  @db.Decimal(10, 2)
+  entryTime     DateTime?
+  exitTime      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CollectionPlan {
+  id                    String    @id @default(uuid())
+  area                  Area      @relation(fields: [areaId], references: [id])
+  areaId                String
+  collectionStartTime   DateTime?
+  durationForCollection Decimal?
+  numberOfLaborers      Decimal?
+  numberOfVens          Decimal?
+  expectedWaste         Decimal?
+  stsId                 String?
+  sts                   STS?      @relation(fields: [stsId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User[]
+}
+
+model Trip {
+  id         String   @id @default(uuid())
+  sts        STS      @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId      String
+  landfill   Landfill @relation(fields: [landfillId], references: [id], onDelete: Cascade)
+  landfillId String
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId  String
+
+  tripStartTime     DateTime?
+  tripEndTime       DateTime?
+  weightOfWaste     Decimal?  @db.Decimal(10, 2)
+  shortage          Decimal?  @db.Decimal(10, 2)
+  estimatedFuelCost Decimal?  @db.Decimal(10, 2)
+
+  distance          Decimal? @db.Decimal(10, 2)
+  estimatedDuration Decimal? @db.Decimal(10, 2)
+  actualDuration    Decimal? @db.Decimal(10, 2)
+
+  tripStatus String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Bill       Bill[]
+}
+
+model STS {
+  id                String   @id @default(uuid())
+  name              String?
+  wardNumber        String?
+  capcity           Decimal? @db.Decimal(10, 2)
+  currentTotalWaste Decimal? @db.Decimal(10, 2)
+
+  requiredWastePerWeek Decimal? @db.Decimal(10, 2)
+  paymentPerTon        Decimal? @db.Decimal(10, 2)
+  fine                 Decimal? @db.Decimal(10, 2)
+
+  latitude  Decimal
+  longitude Decimal
+  Vehicle   Vehicle[]
+
+  STSVehicleEntry STSVehicleEntry[]
+  manager         User[]
+  Trip            Trip[]
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  Bill               Bill[]
+  Schedule           Schedule[]
+  Contractor         Contractor[]
+  Route              Route[]
+  Area               Area[]
+  CollectionPlan     CollectionPlan[]
+  STSContractorEntry STSContractorEntry[]
+  ContractorBill     ContractorBill[]
+}
+
+model Schedule {
+  id           String   @id @default(uuid())
+  sts          STS      @relation(fields: [stsId], references: [id], onDelete: Cascade)
+  stsId        String
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId    String
+  scheduleDate DateTime
+  scheduleTime String
+  wasteAmount  Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  roles       Role[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  User        User[] // one to many relationship. one role can have many users and many users can have one role.
+
+  permissions Permission[] // many to many relationship. many roles can have many permissions and many permissions can have many roles.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Route {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  area        Area?   @relation(fields: [areaId], references: [id])
+  areaId      String?
+
+  sts      STS?    @relation(fields: [stsId], references: [id])
+  stsId    String?
+  employee User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Area {
+  id             String           @id @default(uuid())
+  name           String
+  route          Route[]
+  CollectionPlan CollectionPlan[]
+  sts            STS?             @relation(fields: [stsId], references: [id])
+  stsId          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
