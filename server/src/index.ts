@@ -9,7 +9,7 @@ import routes from "./routes";
 const app = express();
 const PORT = process.env.PORT || 5000;
 const corsOptions = {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
 }

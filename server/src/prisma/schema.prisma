@@ -30,7 +30,7 @@ model User {
   hashedPassword   String
   profileName      String? // full name for contractor manager, and employee
   profileImage     String? // image for contractor manager, and employee
-  accessLevel      String
+  accessLevel      String?
   dateOfBirth      DateTime?
   dateofHire       DateTime?
   jobTitle         String?
@@ -313,7 +313,7 @@ model Role {
   id          String  @id @default(uuid())
   name        String  @unique
   description String?
-  User        User[] // one to many relationship. one role can have many users and many users can have one role.
+  users        User[] // one to many relationship. one role can have many users.
 
   permissions Permission[] // many to many relationship. many roles can have many permissions and many permissions can have many roles.
 
