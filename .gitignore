@@ -1,8 +1,16 @@
-node_modules
-# Keep environment variables out of version control
+# Root node_modules
+/node_modules
+
+# Environment variables
 .env
-/client/.env
-/client/node_modules
-/server/node_modules
-/server/.env
-# Ignore build output  
+client/.env
+server/.env
+
+# Dependency directories
+client/node_modules/
+server/node_modules/
+
+# Build output
+client/.next/
+server/dist/
+*.log
